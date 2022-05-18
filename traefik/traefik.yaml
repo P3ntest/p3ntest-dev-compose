@@ -1,0 +1,20 @@
+entryPoints:
+  web:
+    address: ":80"
+
+  websecure:
+    address: ":443"
+
+providers:
+  docker: {}
+
+api:
+  insecure: true
+
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      email: contact@example.com
+      storage: acme.json
+      httpChallenge:
+        entryPoint: web
