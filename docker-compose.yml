@@ -41,3 +41,23 @@ services:
     labels:
       - "traefik.http.routers.portainer.rule=Host(`docker.${HOST}`)"
       - "traefik.http.services.<service_name>.loadbalancer.server.port=9000"
+  mongodb:
+    image: mongo:5.0
+    container_name: mongo
+    # ports:
+    #   - 27017:27017
+    volumes:
+      - mongodata:/data/db
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_SECRET}
+  urlshortener:
+    image: p3ntest/url-shortener
+    environment:
+      - MONGO=mongodb://mongo:27017/urls
+    labels:
+      - "traefik.http.routers.urlshortener.rule=Host(`u.${HOST}`, `url.${HOST}`)"
+
+volumes:
+  mongodata:
+    external: false
