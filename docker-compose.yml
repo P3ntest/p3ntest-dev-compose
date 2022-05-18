@@ -6,6 +6,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./traefik:/etc/traefik:ro
+      - "./letsencrypt:/letsencrypt"
     ports:
       - 80:80
       - 8080:8080
@@ -16,12 +17,16 @@ services:
         giturl: ${GIT_URL}
     labels:
       - "traefik.http.routers.portfolio.rule=Host(`${HOST}`) && PathPrefix(`/`)"
+      - "traefik.http.routers.blog.tls=true"
+      - "traefik.http.routers.blog.tls.certresolver=letsencrypt"
   sshwifty:
     image: niruix/sshwifty:latest
     environment:
       - SSHWIFTY_SHAREDKEY=${SERVICE_PASSWORD}
     labels:
       - "traefik.http.routers.sshwifty.rule=Host(`ssh.${HOST}`)"
+      - "traefik.http.routers.blog.tls=true"
+      - "traefik.http.routers.blog.tls.certresolver=letsencrypt"
   proxy:
     image: p3ntest/nodeproxy
     environment:
@@ -29,6 +34,8 @@ services:
       - PASSWORD=${SERVICE_PASSWORD}
     labels:
       - "traefik.http.routers.webproxy.rule=Host(`proxy.${HOST}`)"
+      - "traefik.http.routers.blog.tls=true"
+      - "traefik.http.routers.blog.tls.certresolver=letsencrypt"
   portainer:
     image: portainer/portainer-ce:latest
     container_name: portainer
@@ -41,6 +48,8 @@ services:
     labels:
       - "traefik.http.routers.portainer.rule=Host(`docker.${HOST}`)"
       - "traefik.http.services.<service_name>.loadbalancer.server.port=9000"
+      - "traefik.http.routers.blog.tls=true"
+      - "traefik.http.routers.blog.tls.certresolver=letsencrypt"
   mongodb:
     image: mongo:5.0
     container_name: mongo
@@ -55,6 +64,8 @@ services:
       - MONGO=mongodb://mongo:27017/urls
     labels:
       - "traefik.http.routers.urlshortener.rule=Host(`u.${HOST}`, `url.${HOST}`)"
+      - "traefik.http.routers.blog.tls=true"
+      - "traefik.http.routers.blog.tls.certresolver=letsencrypt"
 
 volumes:
   mongodata:
