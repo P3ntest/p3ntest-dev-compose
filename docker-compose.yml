@@ -19,6 +19,25 @@ services:
   sshwifty:
     image: niruix/sshwifty:latest
     environment:
-      - SSHWIFTY_SHAREDKEY=${SSH_PW}
+      - SSHWIFTY_SHAREDKEY=${SERVICE_PASSWORD}
     labels:
       - "traefik.http.routers.sshwifty.rule=Host(`ssh.${HOST}`)"
+  proxy:
+    image: p3ntest/nodeproxy
+    environment:
+      - USERNAME=admin
+      - PASSWORD=${SERVICE_PASSWORD}
+    labels:
+      - "traefik.http.routers.webproxy.rule=Host(`proxy.${HOST}`)"
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./portainer-data:/data
+    labels:
+      - "traefik.http.routers.portainer.rule=Host(`docker.${HOST}`)"
+      - "traefik.http.services.<service_name>.loadbalancer.server.port=9000"
