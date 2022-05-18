@@ -1,0 +1,24 @@
+version: "3"
+
+services:
+  reverse-proxy:
+    image: traefik
+    command: --api.insecure=true --providers.docker
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - 80:80
+      - 8080:8080
+  portfolio:
+    build:
+      context: ./static
+      args:
+        giturl: ${GIT_URL}
+    labels:
+      - "traefik.http.routers.portfolio.rule=PathPrefix(`/`)"
+  sshwifty:
+    image: niruix/sshwifty:latest
+    environment:
+      - SSHWIFTY_SHAREDKEY=${SSH_PW}
+    labels:
+      - "traefik.http.routers.sshwifty.rule=Host(`ssh.${HOST}`)"
