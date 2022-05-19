@@ -86,6 +86,8 @@ services:
   postgres:
     image: postgres
     container_name: postgres
+    volumes:
+      - postgresdata:/var/lib/postgresql/data
     environment:
       -  POSTGRES_PASSWORD=${DATABASE_SECRET}
   license-server:
@@ -108,4 +110,6 @@ services:
       - postgres
 volumes:
   mongodata:
+    external: false
+  postgresdata:
     external: false
