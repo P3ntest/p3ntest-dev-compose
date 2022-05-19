@@ -1,7 +1,7 @@
 version: "3"
 
 services:
-  reverse-proxy:
+  traefik:
     image: traefik
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
@@ -17,16 +17,16 @@ services:
         giturl: ${GIT_URL}
     labels:
       - "traefik.http.routers.portfolio.rule=Host(`${HOST}`) && PathPrefix(`/`)"
-      - "traefik.http.routers.blog.tls=true"
-      - "traefik.http.routers.blog.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.portfolio.tls=${USE_TLS}"
+      - "traefik.http.routers.portfolio.tls.certresolver=letsencrypt"
   sshwifty:
     image: niruix/sshwifty:latest
     environment:
       - SSHWIFTY_SHAREDKEY=${SERVICE_PASSWORD}
     labels:
       - "traefik.http.routers.sshwifty.rule=Host(`ssh.${HOST}`)"
-      - "traefik.http.routers.blog.tls=true"
-      - "traefik.http.routers.blog.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.sshwifty.tls=${USE_TLS}"
+      - "traefik.http.routers.sshwifty.tls.certresolver=letsencrypt"
   proxy:
     image: p3ntest/nodeproxy
     environment:
@@ -34,8 +34,8 @@ services:
       - PASSWORD=${SERVICE_PASSWORD}
     labels:
       - "traefik.http.routers.webproxy.rule=Host(`proxy.${HOST}`)"
-      - "traefik.http.routers.blog.tls=true"
-      - "traefik.http.routers.blog.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.webproxy.tls=${USE_TLS}"
+      - "traefik.http.routers.webproxy.tls.certresolver=letsencrypt"
   portainer:
     image: portainer/portainer-ce:latest
     container_name: portainer
@@ -47,9 +47,8 @@ services:
       - ./portainer-data:/datac
     labels:
       - "traefik.http.routers.portainer.rule=Host(`docker.${HOST}`)"
-      - "traefik.http.services.<service_name>.loadbalancer.server.port=9000"
-      - "traefik.http.routers.blog.tls=true"
-      - "traefik.http.routers.blog.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.portainer.tls=${USE_TLS}"
+      - "traefik.http.routers.portainer.tls.certresolver=letsencrypt"
   mongo:
     image: mongo
     container_name: mongo
@@ -58,12 +57,12 @@ services:
       - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
     environment:
       - MONGO_INITDB_ROOT_USERNAME=root
-      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_SECRET}
+      - MONGO_INITDB_ROOT_PASSWORD=${DATABASE_SECRET}
       - MONGO_INITDB_DATABASE=urls
   mongoexpress:
     image: mongo-express
     environment:
-      - ME_CONFIG_MONGODB_URL=mongodb://root:${MONGO_SECRET}@mongo/admin
+      - ME_CONFIG_MONGODB_URL=mongodb://root:${DATABASE_SECRET}@mongo/admin
       - ME_CONFIG_MONGODB_ENABLE_ADMIN=true
       - ME_CONFIG_MONGODB_AUTH_DATABASE=admin
       - ME_CONFIG_BASICAUTH_USERNAME=admin
@@ -82,8 +81,31 @@ services:
       - mongo
     labels:
       - "traefik.http.routers.urlshortener.rule=Host(`u.${HOST}`, `url.${HOST}`)"
-      - "traefik.http.routers.blog.tls=true"
-      - "traefik.http.routers.blog.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.urlshortener.tls=${USE_TLS}"
+      - "traefik.http.routers.urlshortener.tls.certresolver=letsencrypt"
+  postgres:
+    image: postgres
+    container_name: postgres
+    environment:
+      -  POSTGRES_PASSWORD=${DATABASE_SECRET}
+  license-server:
+    image: p3ntest/license-server
+    environment:
+      - DATABASE_URL=postgres://postgres:${DATABASE_SECRET}@postgres/licenses#
+      - COOKIE_SECRET=${COOKIE_SECRET}
+    depends_on:
+      - license-migration
+    labels:
+      - "traefik.http.routers.licenseserver.rule=Host(`licenses.${HOST}`)"
+      - "traefik.http.routers.licenseserver.tls=${USE_TLS}"
+      - "traefik.http.routers.licenseserver.tls.certresolver=letsencrypt"
+  license-migration:
+    image: p3ntest/license-server
+    command: "npx prisma db push"
+    environment:
+      - DATABASE_URL=postgres://postgres:${DATABASE_SECRET}@postgres/licenses#
+    depends_on:
+      - postgres
 volumes:
   mongodata:
     external: false
