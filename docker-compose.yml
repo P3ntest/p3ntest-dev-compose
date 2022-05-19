@@ -44,29 +44,46 @@ services:
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./portainer-data:/data
+      - ./portainer-data:/datac
     labels:
       - "traefik.http.routers.portainer.rule=Host(`docker.${HOST}`)"
       - "traefik.http.services.<service_name>.loadbalancer.server.port=9000"
       - "traefik.http.routers.blog.tls=true"
       - "traefik.http.routers.blog.tls.certresolver=letsencrypt"
-  mongodb:
-    image: mongo:5.0
+  mongo:
+    image: mongo
     container_name: mongo
     volumes:
       - mongodata:/data/db
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
     environment:
       - MONGO_INITDB_ROOT_USERNAME=root
       - MONGO_INITDB_ROOT_PASSWORD=${MONGO_SECRET}
+      - MONGO_INITDB_DATABASE=urls
+  mongoexpress:
+    image: mongo-express
+    environment:
+      - ME_CONFIG_MONGODB_URL=mongodb://root:${MONGO_SECRET}@mongo/admin
+      - ME_CONFIG_MONGODB_ENABLE_ADMIN=true
+      - ME_CONFIG_MONGODB_AUTH_DATABASE=admin
+      - ME_CONFIG_BASICAUTH_USERNAME=admin
+      - ME_CONFIG_BASICAUTH_PASSWORD=${ADMIN_PASSWORD}
+    depends_on:
+      - mongo
+    labels:
+      - "traefik.http.routers.mongoexpress.rule=Host(`mongo.${HOST}`)"
   urlshortener:
     image: p3ntest/url-shortener
     environment:
-      - MONGO=mongodb://mongo:27017/urls
+      - MONGO=mongodb://urls:secret@mongo/urls
+      - GOOGLE_SECRET=${GOOGLE_SECRET}
+      - GOOGLE_KEY=${GOOGLE_KEY}
+    depends_on:
+      - mongo
     labels:
       - "traefik.http.routers.urlshortener.rule=Host(`u.${HOST}`, `url.${HOST}`)"
       - "traefik.http.routers.blog.tls=true"
       - "traefik.http.routers.blog.tls.certresolver=letsencrypt"
-
 volumes:
   mongodata:
     external: false
