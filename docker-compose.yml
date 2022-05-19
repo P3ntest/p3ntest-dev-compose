@@ -17,6 +17,7 @@ services:
         giturl: ${GIT_URL}
     labels:
       - "traefik.http.routers.portfolio.rule=Host(`${HOST}`) && PathPrefix(`/`)"
+      - "traefik.http.routers.portfolio.entrypoints=websecure"
       - "traefik.http.routers.portfolio.tls=${USE_TLS}"
       - "traefik.http.routers.portfolio.tls.certresolver=letsencrypt"
   sshwifty:
