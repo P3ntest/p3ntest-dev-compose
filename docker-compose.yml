@@ -102,11 +102,21 @@ services:
       - "traefik.http.routers.licenseserver.rule=Host(`licenses.${HOST}`)"
       - "traefik.http.routers.licenseserver.tls=${USE_TLS}"
       - "traefik.http.routers.licenseserver.tls.certresolver=letsencrypt"
+  nextcloud:
+    image: nextcloud
+    labels:
+      - "traefik.http.routers.nextcloud.rule=Host(`cloud.${HOST}`)"
+      - "traefik.http.routers.nextcloud.tls=${USE_TLS}"
+      - "traefik.http.routers.nextcloud.tls.certresolver=letsencrypt"
+    volumes:
+      - nextcloud:/var/www/html
 volumes:
   mongodata:
     external: false
   postgresdata:
     external: false
+  nextcloud:
+    external: true
 
 networks:
   traefik_proxy:
