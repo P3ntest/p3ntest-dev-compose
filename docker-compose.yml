@@ -89,25 +89,16 @@ services:
     volumes:
       - postgresdata:/var/lib/postgresql/data
     environment:
-      -  POSTGRES_PASSWORD=${DATABASE_SECRET}
+      - POSTGRES_PASSWORD=${DATABASE_SECRET}
   license-server:
     image: p3ntest/license-server
     environment:
       - DATABASE_URL=postgres://postgres:${DATABASE_SECRET}@postgres/licenses
       - COOKIE_SECRET=${COOKIE_SECRET}
-    depends_on:
-      - license-migration
     labels:
       - "traefik.http.routers.licenseserver.rule=Host(`licenses.${HOST}`)"
       - "traefik.http.routers.licenseserver.tls=${USE_TLS}"
       - "traefik.http.routers.licenseserver.tls.certresolver=letsencrypt"
-  license-migration:
-    image: p3ntest/license-server
-    command: "npx prisma db push"
-    environment:
-      - DATABASE_URL=postgres://postgres:${DATABASE_SECRET}@postgres/licenses
-    depends_on:
-      - postgres
 volumes:
   mongodata:
     external: false
