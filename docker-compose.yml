@@ -7,6 +7,9 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./traefik:/etc/traefik:ro
       - "./letsencrypt:/letsencrypt"
+    networks:
+      - traefik_proxy
+      - default
     ports:
       - 80:80
       - 8080:8080
@@ -104,3 +107,7 @@ volumes:
     external: false
   postgresdata:
     external: false
+
+networks:
+  traefik_proxy:
+    external: true
