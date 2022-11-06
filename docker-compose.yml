@@ -1,6 +1,7 @@
 version: "3"
 
 services:
+  # Treafik Proxy
   traefik:
     image: traefik
     volumes:
@@ -13,6 +14,8 @@ services:
     ports:
       - 80:80
       - 8080:8080
+
+  # Main site
   portfolio:
     build:
       context: ./static
@@ -22,6 +25,8 @@ services:
       - "traefik.http.routers.portfolio.rule=Host(`${HOST}`) && PathPrefix(`/`)"
       - "traefik.http.routers.portfolio.tls=${USE_TLS}"
       - "traefik.http.routers.portfolio.tls.certresolver=letsencrypt"
+
+  # Online SSH Client
   sshwifty:
     image: niruix/sshwifty:latest
     environment:
@@ -30,6 +35,8 @@ services:
       - "traefik.http.routers.sshwifty.rule=Host(`ssh.${HOST}`)"
       - "traefik.http.routers.sshwifty.tls=${USE_TLS}"
       - "traefik.http.routers.sshwifty.tls.certresolver=letsencrypt"
+
+  # Online website proxy
   proxy:
     image: p3ntest/nodeproxy
     environment:
@@ -39,69 +46,27 @@ services:
       - "traefik.http.routers.webproxy.rule=Host(`proxy.${HOST}`)"
       - "traefik.http.routers.webproxy.tls=${USE_TLS}"
       - "traefik.http.routers.webproxy.tls.certresolver=letsencrypt"
-  portainer:
-    image: portainer/portainer-ce:latest
-    container_name: portainer
-    security_opt:
-      - no-new-privileges:true
+
+  # Url shortener
+  urlredis:
+    image: redis
+    command: redis-server --save 60 1 --loglevel warning
     volumes:
-      - /etc/localtime:/etc/localtime:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./portainer-data:/datac
-    labels:
-      - "traefik.http.routers.portainer.rule=Host(`docker.${HOST}`)"
-      - "traefik.http.routers.portainer.tls=${USE_TLS}"
-      - "traefik.http.routers.portainer.tls.certresolver=letsencrypt"
-  mongo:
-    image: mongo
-    container_name: mongo
-    volumes:
-      - mongodata:/data/db
-      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+      - urlsredis:/data
+  url-shortener:
+    image: p3ntest/url-shortener-redis
     environment:
-      - MONGO_INITDB_ROOT_USERNAME=root
-      - MONGO_INITDB_ROOT_PASSWORD=${DATABASE_SECRET}
-      - MONGO_INITDB_DATABASE=urls
-  mongoexpress:
-    image: mongo-express
-    environment:
-      - ME_CONFIG_MONGODB_URL=mongodb://root:${DATABASE_SECRET}@mongo/admin
-      - ME_CONFIG_MONGODB_ENABLE_ADMIN=true
-      - ME_CONFIG_MONGODB_AUTH_DATABASE=admin
-      - ME_CONFIG_BASICAUTH_USERNAME=admin
-      - ME_CONFIG_BASICAUTH_PASSWORD=${ADMIN_PASSWORD}
-    depends_on:
-      - mongo
-    labels:
-      - "traefik.http.routers.mongoexpress.rule=Host(`mongo.${HOST}`)"
-  urlshortener:
-    image: p3ntest/url-shortener
-    environment:
-      - MONGO=mongodb://urls:secret@mongo/urls
+      - REDIS=redis://urlredis
       - GOOGLE_SECRET=${GOOGLE_SECRET}
       - GOOGLE_KEY=${GOOGLE_KEY}
     depends_on:
-      - mongo
+      - urlredis
     labels:
       - "traefik.http.routers.urlshortener.rule=Host(`u.${HOST}`, `url.${HOST}`)"
       - "traefik.http.routers.urlshortener.tls=${USE_TLS}"
       - "traefik.http.routers.urlshortener.tls.certresolver=letsencrypt"
-  postgres:
-    image: postgres
-    container_name: postgres
-    volumes:
-      - postgresdata:/var/lib/postgresql/data
-    environment:
-      - POSTGRES_PASSWORD=${DATABASE_SECRET}
-  license-server:
-    image: p3ntest/license-server
-    environment:
-      - DATABASE_URL=postgres://postgres:${DATABASE_SECRET}@postgres/licenses
-      - COOKIE_SECRET=${COOKIE_SECRET}
-    labels:
-      - "traefik.http.routers.licenseserver.rule=Host(`licenses.${HOST}`)"
-      - "traefik.http.routers.licenseserver.tls=${USE_TLS}"
-      - "traefik.http.routers.licenseserver.tls.certresolver=letsencrypt"
+
+  # Next Cloud
   nextcloud:
     image: nextcloud
     labels:
@@ -110,14 +75,43 @@ services:
       - "traefik.http.routers.nextcloud.tls.certresolver=letsencrypt"
     volumes:
       - nextcloud:/var/www/html
+
+  # Wiki
+  wikidb:
+    image: postgres:11-alpine
+    environment:
+      POSTGRES_DB: wiki
+      POSTGRES_PASSWORD: ${DATABASE_SECRET}
+      POSTGRES_USER: wikijs
+    restart: unless-stopped
+    volumes:
+      - wikidbdata:/var/lib/postgresql/data
+  wikijs:
+    image: ghcr.io/requarks/wiki:2
+    depends_on:
+      - wikidb
+    environment:
+      DB_TYPE: postgres
+      DB_HOST: wikidb
+      DB_PORT: 5432
+      DB_USER: wikijs
+      DB_PASS: ${DATABASE_SECRET}
+      DB_NAME: wiki
+    restart: unless-stopped
+    labels:
+      - "traefik.http.routers.wikijs.rule=Host(`wiki.${HOST}`)"
+      - "traefik.http.routers.wikijs.tls=${USE_TLS}"
+      - "traefik.http.routers.wikijs.tls.certresolver=letsencrypt"
+
 volumes:
-  mongodata:
+  urlsredis:
     external: false
-  postgresdata:
+  wikidbdata:
     external: false
   nextcloud:
     external: true
 
 networks:
+  # Externally exposing networks to hook into proxy
   traefik_proxy:
     external: true
