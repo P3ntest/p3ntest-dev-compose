@@ -103,13 +103,29 @@ services:
       - "traefik.http.routers.wikijs.tls=${USE_TLS}"
       - "traefik.http.routers.wikijs.tls.certresolver=letsencrypt"
 
+  # File Sharing
+  youtransfer:
+    image: remie/youtransfer:stable
+    restart: unless-stopped
+    volumes:
+      - ./youtransfer:/opt/youtransfer/config
+      - youtransferuploads:/opt/youtransfer/uploads
+    ports:
+      - 5000:5000
+    labels:
+      - "traefik.http.routers.youtransfer.rule=Host(`files.${HOST}`)"
+      - "traefik.http.routers.youtransfer.tls=${USE_TLS}"
+      - "traefik.http.routers.youtransfer.tls.certresolver=letsencrypt"
+
 volumes:
   urlsredis:
-    external: false
   wikidbdata:
-    external: false
   nextcloud:
     external: true
+  youtransferuploads:
+    driver: local
+    driver_opts:
+      o: "size=5000m"
 
 networks:
   # Externally exposing networks to hook into proxy
