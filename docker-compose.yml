@@ -126,6 +126,8 @@ volumes:
     driver: local
     driver_opts:
       o: "size=5000m"
+      device: tmpfs
+      type: tmpfs
 
 networks:
   # Externally exposing networks to hook into proxy
