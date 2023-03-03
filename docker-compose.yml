@@ -10,7 +10,6 @@ services:
       - "./letsencrypt:/letsencrypt"
     networks:
       - traefik_proxy
-      - default
     ports:
       - 80:80
       - 8080:8080
@@ -25,6 +24,8 @@ services:
       - "traefik.http.routers.portfolio.rule=Host(`${HOST}`) && PathPrefix(`/`)"
       - "traefik.http.routers.portfolio.tls=${USE_TLS}"
       - "traefik.http.routers.portfolio.tls.certresolver=letsencrypt"
+    networks:
+      - traefik_proxy
 
   # Online SSH Client
   sshwifty:
@@ -35,6 +36,8 @@ services:
       - "traefik.http.routers.sshwifty.rule=Host(`ssh.${HOST}`)"
       - "traefik.http.routers.sshwifty.tls=${USE_TLS}"
       - "traefik.http.routers.sshwifty.tls.certresolver=letsencrypt"
+    networks:
+      - traefik_proxy
 
   # Online website proxy
   proxy:
@@ -46,6 +49,8 @@ services:
       - "traefik.http.routers.webproxy.rule=Host(`proxy.${HOST}`)"
       - "traefik.http.routers.webproxy.tls=${USE_TLS}"
       - "traefik.http.routers.webproxy.tls.certresolver=letsencrypt"
+    networks:
+      - traefik_proxy
 
   # # Url shortener
   # urlredis:
@@ -75,6 +80,8 @@ services:
       - "traefik.http.routers.nextcloud.tls.certresolver=letsencrypt"
     volumes:
       - nextcloud:/var/www/html
+    networks:
+      - traefik_proxy
 
   # Wiki
   wikidb:
@@ -86,6 +93,8 @@ services:
     restart: unless-stopped
     volumes:
       - wikidbdata:/var/lib/postgresql/data
+    networks:
+      - traefik_proxy
   wikijs:
     image: ghcr.io/requarks/wiki:2
     depends_on:
@@ -102,6 +111,8 @@ services:
       - "traefik.http.routers.wikijs.rule=Host(`wiki.${HOST}`)"
       - "traefik.http.routers.wikijs.tls=${USE_TLS}"
       - "traefik.http.routers.wikijs.tls.certresolver=letsencrypt"
+    networks:
+      - traefik_proxy
 
   # File Sharing
   youtransfer:
@@ -116,6 +127,8 @@ services:
       - "traefik.http.routers.youtransfer.rule=Host(`files.${HOST}`)"
       - "traefik.http.routers.youtransfer.tls=${USE_TLS}"
       - "traefik.http.routers.youtransfer.tls.certresolver=letsencrypt"
+    networks:
+      - traefik_proxy
 
 volumes:
   urlsredis:
