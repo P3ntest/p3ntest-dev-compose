@@ -47,24 +47,24 @@ services:
       - "traefik.http.routers.webproxy.tls=${USE_TLS}"
       - "traefik.http.routers.webproxy.tls.certresolver=letsencrypt"
 
-  # Url shortener
-  urlredis:
-    image: redis
-    command: redis-server --save 60 1 --loglevel warning
-    volumes:
-      - urlsredis:/data
-  url-shortener:
-    image: p3ntest/url-shortener-redis
-    environment:
-      - REDIS=redis://urlredis
-      - GOOGLE_SECRET=${GOOGLE_SECRET}
-      - GOOGLE_KEY=${GOOGLE_KEY}
-    depends_on:
-      - urlredis
-    labels:
-      - "traefik.http.routers.urlshortener.rule=Host(`u.${HOST}`, `url.${HOST}`)"
-      - "traefik.http.routers.urlshortener.tls=${USE_TLS}"
-      - "traefik.http.routers.urlshortener.tls.certresolver=letsencrypt"
+  # # Url shortener
+  # urlredis:
+  #   image: redis
+  #   command: redis-server --save 60 1 --loglevel warning
+  #   volumes:
+  #     - urlsredis:/data
+  # url-shortener:
+  #   image: p3ntest/url-shortener-redis
+  #   environment:
+  #     - REDIS=redis://urlredis
+  #     - GOOGLE_SECRET=${GOOGLE_SECRET}
+  #     - GOOGLE_KEY=${GOOGLE_KEY}
+  #   depends_on:
+  #     - urlredis
+  #   labels:
+  #     - "traefik.http.routers.urlshortener.rule=Host(`u.${HOST}`, `url.${HOST}`)"
+  #     - "traefik.http.routers.urlshortener.tls=${USE_TLS}"
+  #     - "traefik.http.routers.urlshortener.tls.certresolver=letsencrypt"
 
   # Next Cloud
   nextcloud:
